@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Lost and Found Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <h2>Register Account</h2>
+            <p class="modal-subtitle">AI-Powered Campus Lost & Found System</p>
+            
+            <div class="auth-tabs">
+                <button type="button" id="tabRegister" class="tab-btn active" onclick="switchAuthMode('register')">Register</button>
+                <button type="button" id="tabLogin" class="tab-btn" onclick="switchAuthMode('login')">Login</button>
+            </div>
+
+            <form id="authForm" onsubmit="handleAuthSubmit(event)">
+                <div class="form-group" id="fullNameGroup">
+                    <label>Full Name</label>
+                    <input type="text" id="auth_name">
+                </div>
+
+                <div class="form-group" id="roleGroup">
+                    <label>Role</label>
+                    <select id="auth_role" onchange="toggleAuthIdField()">
+                        <option value="Student">Student</option>
+                        <option value="Faculty">Faculty / Staff</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="studentIdGroup">
+                    <label>Student ID / Roll No</label>
+                    <input type="text" id="auth_id">
+                </div>
+
+                <div class="form-group">
+                    <label>Campus Email</label>
+                    <input type="email" id="auth_email" required>
+                </div>
+
+                <div class="form-group" id="passwordGroup">
+                    <label>Password</label>
+                    <input type="password" id="auth_password">
+                </div>
+
+                <!-- New Password Field for Forgot Password Mode -->
+                <div class="form-group" id="newPasswordGroup" style="display: none;">
+                    <label>New Password</label>
+                    <input type="password" id="auth_new_password">
+                </div>
+
+                <button type="submit" id="authSubmitBtn" class="primary-btn">Register</button>
+
+                <!-- Forgot Password Link Below Login Button -->
+                <div id="forgotPasswordLinkContainer" style="display: none; text-align: center; margin-top: 15px;">
+                    <a href="javascript:void(0)" onclick="switchAuthMode('forgot')" style="color: var(--primary); text-decoration: none; font-size: 0.9rem; font-weight: 600;">Forgot password?</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container" id="mainContainer" style="opacity: 0.3; pointer-events: none;">
+        
+        <!-- Header -->
+        <header class="main-header">
+            <div class="brand-container">
+                <div class="brand-logo">🔍</div>
+                <div class="brand-text">
+                    <h1>AI Lost and Found Platform</h1>
+                </div>
+            </div>
+
+            <!-- User Profile Dropdown -->
+            <div class="user-profile-dropdown" onclick="toggleUserDropdown(event)">
+                <span id="displayUserName">Account</span> ▾
+                <div id="userDropdownMenu" class="dropdown-menu">
+                    <div class="dropdown-header">
+                        <strong id="dropdownName">User Name</strong>
+                        <span id="dropdownRole" class="role-tag">Student</span>
+                    </div>
+                    <hr>
+                    <button type="button" onclick="logout()" class="dropdown-logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Portal Main Grid -->
+        <div class="portal-main-grid">
+            
+            <!-- Left Card: Report Form -->
+            <div class="card">
+                <h2>Report Lost or Found Item</h2>
+                <form id="reportForm" onsubmit="submitReport(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Report Type</label>
+                            <select id="report_type">
+                                <option value="lost">Lost Item</option>
+                                <option value="found">Found Item</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Item Name</label>
+                            <input type="text" id="item_name" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="item_category" required>
+                                <option value="">Select Category</option>
+                                <option value="accessories">Accessories (e.g., rings, chains, analog watches, bracelets, umbrella)</option>
+                                <option value="personals">Personals (e.g., wallet, purse, atm cards, cash,room keys)</option>
+                                <option value="electronics">Electronics (e.g., laptop, charger, earphones, digital watches)</option>
+                                <option value="automotive_accessories">Automotive Accessories (e.g., bike key, helmet, keychain, etc.)</option>
+                                <option value="Books & Stationery">Books & Stationery (e.g.,notebooks,charts,Drafter,text books)</option>
+                                <option value="ID Cards & Documents">ID Cards & Documents (e.g.,college ID,files, bus pass)</option>
+                                <option value="Clothing">Clothing (e.g., caps, jackets, helmets)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Colour</label>
+                            <input type="text" id="colour">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Brand / Model <span style="font-size: 0.85rem; color: #666; font-weight: normal;">(otherwise unknown)</span></label>
+                            <input type="text" id="brand">
+                        </div>
+                        <div class="form-group">
+                            <label>Campus Location</label>
+                            <input type="text" id="location" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Identities of the item</label>
+                        <textarea id="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Item Photo (if available)</label>
+                        <input type="file" id="item_image" accept="image/*">
+                    </div>
+
+                    <button type="submit" class="primary-btn">Submit Report</button>
+                </form>
+            </div>
+
+            <!-- Right Card: Feed and AI Matches -->
+            <div class="card feed-section">
+                <h2>AI Matching & Campus Reports</h2>
+                
+                <div class="feed-tabs">
+                    <button type="button" class="tab-btn active" onclick="switchFeedTab('reports', event)">Recent Reports</button>
+                    <button type="button" class="tab-btn" onclick="switchFeedTab('matches', event)">AI Matches</button>
+                </div>
+
+                <div id="reportsFeed" class="feed-content">
+                    <p class="empty-state">Loading reports...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Secure Chat Modal -->
+    <div id="chatModal" class="modal" style="display: none;">
+        <div class="modal-content chat-box-content">
+            <div class="chat-header">
+                <h3>Anonymous Direct Chat</h3>
+                <button type="button" class="close-btn" onclick="closeChat()">&times;</button>
+            </div>
+
+            <div id="chatMessages" class="chat-messages">
+                <p class="empty-state">Start secure conversation...</p>
+            </div>
+
+            <!-- Chat input area wrapper -->
+            <div id="chatInputArea" class="chat-input-area">
+                <input type="text" id="chatInput">
+                <button type="button" onclick="sendChatMessage()" class="primary-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
