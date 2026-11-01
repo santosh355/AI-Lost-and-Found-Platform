@@ -172,7 +172,7 @@ def report_item():
 def get_reports():
     conn = sqlite3.connect('portal.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT report_type, item_name, item_category, colour, brand, description, location, user_token, image_url FROM reports ORDER BY id DESC')
+    cursor.execute('SELECT report_type, item_name, item_category, colour, brand, description, location, user_token, image_url, reporter_email FROM reports ORDER BY id DESC')
     rows = cursor.fetchall()
     conn.close()
 
@@ -187,9 +187,30 @@ def get_reports():
             'description': r[5],
             'location': r[6],
             'user_token': r[7],
-            'image_url': r[8]
+            'image_url': r[8],
+            'reporter_email': r[9]
         })
     return jsonify(reports)
+
+@app.route('/api/reports/<string:user_token>', methods=['DELETE'])
+def delete_report(user_token):
+    conn = sqlite3.connect('portal.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT reporter_email FROM reports WHERE user_token = ?', (user_token,))
+    row = cursor.fetchone()
+    
+    if not row:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Report not found.'}), 404
+        
+    cursor.execute('DELETE FROM reports WHERE user_token = ?', (user_token,))
+    cursor.execute('DELETE FROM chat_messages WHERE sender_token = ? OR receiver_token = ?', (user_token, user_token))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Report and related chats cleared successfully!'})
 
 @app.route('/api/match-candidates', methods=['GET'])
 def match_candidates():
@@ -207,23 +228,18 @@ def match_candidates():
             l_name, l_cat, l_col, l_brand, l_desc, l_loc, l_token = l
             f_name, f_cat, f_col, f_brand, f_desc, f_loc, f_token = f
 
-            # Strict category check to avoid cross-category mismatches (e.g., bottle vs purse)
             if l_cat.strip().lower() != f_cat.strip().lower():
                 continue
 
-            # Combine all available text features dynamically (handles missing descriptions, colours or brands gracefully)
             l_text = f"{l_name} {l_cat} {l_col or ''} {l_brand or ''} {l_desc or ''} {l_loc}"
             f_text = f"{f_name} {f_cat} {f_col or ''} {f_brand or ''} {f_desc or ''} {f_loc}"
 
-            # TF-IDF and Cosine Similarity to calculate precise match score
             vectorizer = TfidfVectorizer().fit_transform([l_text, f_text])
             vectors = vectorizer.toarray()
             similarity = cosine_similarity([vectors[0]], [vectors[1]])[0][0]
             
-            # Convert similarity into percentage score (0 to 100)
             score = int(similarity * 100)
 
-            # Keep only relevant matches (threshold score >= 35)
             if score >= 35:  
                 matches.append({
                     'lost_item': l_name,
@@ -234,7 +250,6 @@ def match_candidates():
                     'score': score
                 })
 
-    # Sort matches by highest score first
     matches = sorted(matches, key=lambda x: x['score'], reverse=True)
     return jsonify(matches)
 

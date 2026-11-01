@@ -39,7 +39,6 @@ function switchAuthMode(mode) {
     const passInput = document.getElementById("auth_password");
     const newPassInput = document.getElementById("auth_new_password");
 
-    // Reset active tabs
     tabReg.classList.remove("active");
     tabLog.classList.remove("active");
 
@@ -51,7 +50,7 @@ function switchAuthMode(mode) {
         studentIdGroup.style.display = "none";
         passwordGroup.style.display = "block";
         newPasswordGroup.style.display = "none";
-        forgotLink.style.display = "block"; // Show "Forgot password?" link below login button
+        forgotLink.style.display = "block";
 
         nameInput.required = false;
         passInput.required = true;
@@ -94,7 +93,6 @@ function toggleUserDropdown(event) {
 
 window.addEventListener("click", () => {
     const menu = document.getElementById("userDropdownMenu");
-
     if (menu && menu.classList.contains("show")) {
         menu.classList.remove("show");
     }
@@ -258,19 +256,52 @@ async function loadReports() {
             return;
         }
 
-        feed.innerHTML = reports.map(r => `
-            <div class="report-item-card">
-                <div class="report-badge ${r.report_type}">${r.report_type.toUpperCase()}</div>
-                <h3>${r.item_name} (${r.item_category})</h3>
-                <p><strong>Location:</strong> ${r.location}</p>
-                <p><strong>Colour / Brand:</strong> ${r.colour || "N/A"} / ${r.brand || "N/A"}</p>
-                <p><strong>Identities:</strong> ${r.description || "None"}</p>
-                <p><strong>Token ID:</strong> ${r.user_token}</p>
-                ${r.image_url ? `<img src="${r.image_url}" class="item-thumb" alt="Item">` : ""}
-            </div>
-        `).join("");
+        feed.innerHTML = reports.map(r => {
+            const isMyReport = currentUser && r.reporter_email && r.reporter_email.toLowerCase() === currentUser.email.toLowerCase();
+
+            return `
+                <div class="report-item-card">
+                    <div class="report-badge ${r.report_type}">${r.report_type.toUpperCase()}</div>
+                    <h3>${r.item_name} (${r.item_category})</h3>
+                    <p><strong>Location:</strong> ${r.location}</p>
+                    <p><strong>Colour / Brand:</strong> ${r.colour || "N/A"} / ${r.brand || "N/A"}</p>
+                    <p><strong>Identities:</strong> ${r.description || "None"}</p>
+                    <p><strong>Token ID:</strong> ${r.user_token}</p>
+                    ${r.image_url ? `<img src="${r.image_url}" class="item-thumb" alt="Item">` : ""}
+                    
+                    ${isMyReport ? `
+                        <button type="button" onclick="deleteReport('${r.user_token}')" style="background: #dc2626; color: white; border: none; padding: 8px 12px; border-radius: 6px; margin-top: 10px; cursor: pointer; font-weight: 600;">
+                            Clear Report / Item Returned
+                        </button>
+                    ` : ""}
+                </div>
+            `;
+        }).join("");
     } catch (error) {
         console.error("Loading reports failed:", error);
+    }
+}
+
+async function deleteReport(userToken) {
+    if (!confirm("Are you sure? This will remove the report and clear associated chat history.")) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/reports/${userToken}`, {
+            method: "DELETE"
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert("Report cleared successfully!");
+            loadReports();
+        } else {
+            alert(data.message || "Failed to delete report.");
+        }
+    } catch (error) {
+        console.error("Delete error:", error);
+        alert("Cannot connect to server.");
     }
 }
 
